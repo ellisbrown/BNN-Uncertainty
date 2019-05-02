@@ -12,8 +12,9 @@ parser = argparse.ArgumentParser(description='Mauna Loa runner')
 parser.add_argument('--trained_model', default='models/mauna_loa.h5',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--train', default=False, type=bool)
-parser.add_argument('--save_folder', default='eval/', type=str,
+parser.add_argument('--model_name', default='mauna_loa.h5', type=str,
                     help='Dir to save results')
+parser.add_argument('--epochs', default=40, type=int, help='Number of epochs to train on')
 parser.add_argument('-f', default=None, type=str, help="Dummy arg so we can load in Jupyter Notebooks")
 args = parser.parse_args()
 
@@ -32,24 +33,27 @@ N = 272
 num_hidden_layers = 5
 # num hidden units
 n_hidden = 1024
-n_epochs = 40
+epochs = args.epochs
+batch_size = 128
 epochs_multiplier = 1
 epochs_multiplier
-best_tau = 0.1
-best_dropout = 0.1
+tau = 0.1
+dropout = 0.1
 net = bnn(
     X_train,
     y_train,
     ([int(n_hidden)] * num_hidden_layers),
     normalize=False,
-    tau=best_tau,
-    dropout=best_dropout
+    tau=tau,
+    dropout=dropout,
+    activation='relu'
 )
 
 if args.train:
     print("Training a new model...")
-    net.train(X_train, y_train, n_epochs=n_epochs, batch_size=128, verbose=1)
-    net.model.save("models/mauna_loa.h5")
+    net.train(X_train, y_train, epochs=epochs, batch_size=batch_size, 
+              verbose=1)
+    net.model.save("models/" + args.model_name)
 else:
     net.model = load_model(args.trained_model)
 

@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_predictions(net, trainset, X_test,
-                     iters=200, n_std=2, ax=None):
+def plot_predictions_only(net, trainset, X_test,
+                          iters=200, n_std=2, ax=None):
     X_train, y_train = trainset
 
     if ax is None:
@@ -26,15 +26,17 @@ def plot_predictions(net, trainset, X_test,
     return ax
 
 
-def plot_predictions2(net, trainset, X_test,
-                      iters=200, n_std=2, ax=None):
+def plot_predictions(net, trainset, X_test,
+                     iters=200, n_std=2, ax=None,
+                     zoomed=False):
     X_train, y_train = trainset
 
     if ax is None:
         plt.close("all")
         plt.clf()
         fig, ax = plt.subplots(1, 1)
-        plt.axis([-1.75, 3.75, -20, 20])
+        if zoomed:
+            plt.axis([-1.75, 3.75, -20, 20])
     Xs = np.concatenate((X_test, X_train))
     Xs = np.sort(Xs, axis=0)
     y_means, y_stds = net.predict(Xs, T=iters)

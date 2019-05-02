@@ -17,7 +17,8 @@ from keras import Model
 class bnn:
 
     def __init__(self, X_train, y_train, n_hidden,
-                 normalize=False, tau=1.0, dropout=0.05):
+                 normalize=False, tau=1.0, dropout=0.05,
+                 activation='relu'):
         """
             Constructor for the class implementing a Bayesian neural network
             trained with the probabilistic back propagation method.
@@ -67,11 +68,11 @@ class bnn:
 
         inputs = Input(shape=(X_train.shape[1],))
         inter = Dropout(dropout)(inputs, training=True)
-        inter = Dense(n_hidden[0], activation='relu',
+        inter = Dense(n_hidden[0], activation=activation,
                       kernel_regularizer=l2(reg))(inter)
         for i in range(len(n_hidden) - 1):
             inter = Dropout(dropout)(inter, training=True)
-            inter = Dense(n_hidden[i+1], activation='relu',
+            inter = Dense(n_hidden[i+1], activation=activation,
                           kernel_regularizer=l2(reg))(inter)
         inter = Dropout(dropout)(inter, training=True)
         outputs = Dense(
@@ -82,7 +83,7 @@ class bnn:
         model.compile(loss='mean_squared_error', optimizer='adam')
         self.model = model
 
-    def train(self, X_train, y_train, batch_size, n_epochs=40, verbose=0):
+    def train(self, X_train, y_train, batch_size, epochs=40, verbose=0):
         # normalize
         X_train = (X_train - np.full(X_train.shape, self.mean_X_train)) / \
             np.full(X_train.shape, self.std_X_train)
@@ -92,7 +93,7 @@ class bnn:
         # iterate training
         start_time = time.time()
         self.model.fit(X_train, y_train_normalized,
-                       batch_size=batch_size, nb_epoch=n_epochs, verbose=0)
+                       batch_size=batch_size, epochs=epochs, verbose=0)
         self.running_time = time.time() - start_time
 
     def predict(self, X_test, T=10000):
