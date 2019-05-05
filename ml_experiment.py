@@ -29,7 +29,7 @@ X_train, y_train = trainset
 
 num_hidden_layers = 5
 n_hidden = 1024 # num hidden units
-epochs = 40
+epochs = 500
 batch_size = 128
 epochs_multiplier = 1
 tau = 0.1
@@ -59,5 +59,5 @@ for activation in tqdm(activations):
         os.makedirs(experiment_dir)
     net.model.save("{}model.h5".format(experiment_dir))
 
-    plot_predictions(net, trainset, X_test, iters=20, n_std=4)
+    plot_predictions(net, trainset, X_test, iters=1000, n_std=4)
     plt.savefig("{}plot.png".format(experiment_dir))

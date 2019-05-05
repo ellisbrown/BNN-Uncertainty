@@ -102,7 +102,7 @@ class bnn:
         X_test = (X_test - np.full(X_test.shape, self.mean_X_train)) / \
             np.full(X_test.shape, self.std_X_train)
 
-        pbar = tqdm.tnrange(T)
+        pbar = tqdm.trange(T)
 
         Yt_hat = np.array(
             [self.model.predict(X_test, batch_size=500, verbose=0) for _ in pbar])
@@ -154,8 +154,8 @@ class bnn:
         rmse = np.mean((y_test.squeeze() - MC_pred.squeeze())**2.)**0.5
 
         # We compute the test log-likelihood
-        ll = (logsumexp(-0.5 * self.tau * (y_test[None] - Yt_hat)**2., 0) - np.log(T)
-              - 0.5*np.log(2*np.pi) + 0.5*np.log(self.tau))
+        ll = (logsumexp(-0.5 * self.tau * (y_test[None] - Yt_hat)**2., 0) -
+              np.log(T) - 0.5*np.log(2*np.pi) + 0.5*np.log(self.tau))
         test_ll = np.mean(ll)
 
         # We are done!
