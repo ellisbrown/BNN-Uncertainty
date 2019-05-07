@@ -6,7 +6,7 @@ import tqdm
 import time
 import os
 import tensorflow as tf
-import tensorflow_probability as tfp
+#import tensorflow_probability as tfp
 from keras.regularizers import l2
 from keras import Input
 from keras.layers import Dropout
