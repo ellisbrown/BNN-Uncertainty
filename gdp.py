@@ -37,7 +37,7 @@ y_test = y[out_of_sample_inds]
 num_hidden_layers = 5
 # num hidden units
 n_hidden = 1024
-n_epochs = 40
+n_epochs = 1000
 epochs_multiplier = 1
 epochs_multiplier
 best_tau = 0.1
@@ -55,5 +55,5 @@ print("Training a new model...")
 net.train(X_train, y_train, n_epochs=n_epochs, batch_size=128, verbose=1)
 net.model.save("models/gdp.h5")
 
-plot_predictions3(net, (X_train, y_train), X_test, dates[sample_inds], iters=20, n_std=4)
+plot_predictions3(net, (X_train, y_train), X, dates, sample_inds, out_of_sample_inds, iters=10000, n_std=4)
 plt.show()
