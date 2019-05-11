@@ -11,9 +11,9 @@ from bnn import bnn
 from viz import plot_predictions
 
 parser = argparse.ArgumentParser(description='Mauna Loa experiment runner')
-parser.add_argument('--exp', default=0, type=int, 
+parser.add_argument('--exp', default=0, type=int,
                     help='Experiment number')
-parser.add_argument('-f', default=None, type=str, 
+parser.add_argument('-f', default=None, type=str,
                     help="Dummy arg so we can load in Jupyter Notebooks")
 args = parser.parse_args()
 
@@ -48,11 +48,11 @@ for activation in tqdm(activations):
         normalize=normalize,
         tau=tau,
         dropout=dropout,
-        activation='relu'
+        activation=activation
     )
 
     print("Training model with {}...".format(activation))
-    net.train(X_train, y_train, epochs=epochs, batch_size=batch_size, 
+    net.train(X_train, y_train, epochs=epochs, batch_size=batch_size,
               verbose=1)
 
     if not os.path.exists(experiment_dir):
