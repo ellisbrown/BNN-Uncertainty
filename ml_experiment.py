@@ -63,8 +63,10 @@ fig.legend(custom_lines, ["observed", "mean", "uncertainty"], ncol=3,
            mode="expand", borderaxespad=.02, fancybox=True, shadow=True
            )
 
-experiment_dir = "experiments/mauna_loa/{}/exp{}_".format(exp_num, exp_num)
-
+experiment_dir = "experiments/mauna_loa/{}/".format(exp_num)
+if not os.path.exists(experiment_dir):
+    os.makedirs(experiment_dir)
+experiment_dir = "{}exp_{}_".format(experiment_dir, exp_num)
 # experiments
 stats = {}
 for a in tqdm(range(len(activations))):
@@ -84,8 +86,6 @@ for a in tqdm(range(len(activations))):
     net.train(X_train, y_train, epochs=epochs, batch_size=batch_size,
               verbose=1)
 
-    if not os.path.exists(experiment_dir):
-        os.makedirs(experiment_dir)
     net.model.save("{}{}_model.h5".format(experiment_dir, activation))
 
     # record test stats
