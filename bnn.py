@@ -18,6 +18,7 @@ class bnn:
 
     def __init__(self, X_train, y_train, n_hidden,
                  normalize=False, tau=1.0, dropout=0.05,
+                 lengthscale=1e-2, optimizer='adam',
                  activation='relu'):
         """
             Constructor for the class implementing a Bayesian neural network
@@ -63,7 +64,6 @@ class bnn:
         # We construct the network
         N = X_train.shape[0]
         batch_size = 128
-        lengthscale = 1e-2
         reg = lengthscale**2 * (1 - dropout) / (2. * N * tau)
 
         inputs = Input(shape=(X_train.shape[1],))
@@ -80,7 +80,7 @@ class bnn:
         model = Model(inputs, outputs)
 
         self.tau = tau
-        model.compile(loss='mean_squared_error', optimizer='adam')
+        model.compile(loss='mean_squared_error', optimizer=optimizer)
         self.model = model
 
     def train(self, X_train, y_train, batch_size, epochs=40, verbose=0):
