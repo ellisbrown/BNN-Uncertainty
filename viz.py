@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
+import keras
 
 
 def plot_predictions_only(net, trainset, X_test,
@@ -92,3 +94,26 @@ def plot_predictions_no_legend(net, trainset, X_test,
         )
     # ax.legend()
     return ax
+
+
+def plot_activation_fn(activation, lo=-5, hi=5, step=0.1, sess=None, ax=None):
+    if sess is None:
+        sess = tf.Session()
+    if ax is None:
+        _, ax = plt.subplots(1, 1)
+    x = np.arange(lo, hi, step)
+    activation_fn = keras.activations.get(activation)
+    y = activation_fn(x).eval(session=sess)
+    ax.plot(x, y)
+    ax.set(ylabel=activation)
+    return ax
+
+def plot_activation_fns(activations, lo=-5, hi=5, step=0.1, sess=None)
+    fig, axes = plt.subplots(len(activations), sharex=True)
+    fig.set_figwidth(4)
+    fig.set_figheight(1.75 * len(activations))
+    fig.tight_layout()
+    for i in range(len(activations)):
+        ax = axes[i]
+        plot_activation_fn(activations[i], lo, hi, sess=sess, ax=ax)
+    return fig
