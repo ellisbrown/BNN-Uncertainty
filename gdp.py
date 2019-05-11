@@ -1,4 +1,4 @@
-
+import os
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import argparse
@@ -8,7 +8,7 @@ from keras.models import load_model
 
 from data import load_from_H5
 from bnn import bnn
-#from viz import plot_predictions3
+from viz import plot_predictions
 
 
 
@@ -33,6 +33,7 @@ X_train = X[sample_inds, :]
 X_test = X[out_of_sample_inds, :]
 y_train = y[sample_inds]
 y_test = y[out_of_sample_inds]
+trainset = X_train, y_train
 
 
 
@@ -58,7 +59,6 @@ net = bnn(
     activation='relu'
 )
 
-print("Training model with {}...".format(activation))
 net.train(X_train, y_train, epochs=epochs, batch_size=batch_size,
           verbose=1)
 
@@ -66,6 +66,5 @@ if not os.path.exists(experiment_dir):
     os.makedirs(experiment_dir)
 net.model.save("{}model.h5".format(experiment_dir))
 
-plot_predictions(net, trainset, X_test, iters=1000, n_std=4)
-plt.show()
+plot_predictions(net, trainset, X_test, X, dates, sample_inds, out_of_sample_inds, iters=1000, n_std=4)
 plt.savefig("{}plot.png".format(experiment_dir))
