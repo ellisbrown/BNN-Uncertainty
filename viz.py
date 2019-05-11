@@ -108,7 +108,7 @@ def plot_activation_fn(activation, lo=-5, hi=5, step=0.1, sess=None, ax=None):
     ax.set(ylabel=activation)
     return ax
 
-def plot_activation_fns(activations, lo=-5, hi=5, step=0.1, sess=None)
+def plot_activation_fns(activations, lo=-5, hi=5, step=0.1, sess=None):
     fig, axes = plt.subplots(len(activations), sharex=True)
     fig.set_figwidth(4)
     fig.set_figheight(1.75 * len(activations))
