@@ -57,3 +57,38 @@ def plot_predictions(net, trainset, X_test,
         )
     ax.legend()
     return ax
+
+
+def plot_predictions_no_legend(net, trainset, X_test,
+                               iters=200, n_std=2, ax=None,
+                               zoomed=False):
+    X_train, y_train = trainset
+
+    if ax is None:
+        plt.close("all")
+        plt.clf()
+        fig, ax = plt.subplots(1, 1)
+        if zoomed:
+            plt.axis([-1.75, 3.75, -20, 20])
+    Xs = np.concatenate((X_test, X_train))
+    Xs = np.sort(Xs, axis=0)
+    y_means, y_stds = net.predict(Xs, T=iters)
+    ax.plot(X_train, y_train, "r", alpha=0.8, 
+            # label="observed"
+            )
+    ax.plot(Xs, y_means,
+            # label="prediction",
+            color="k",
+            linestyle=":",
+            linewidth=.75,
+            alpha=.8)
+    for i in range(n_std):
+        ax.fill_between(
+            Xs.squeeze(),
+            (y_means - y_stds * ((i+1)/2)).squeeze(),
+            (y_means + y_stds * ((i+1)/2)).squeeze(),
+            color="b",
+            alpha=0.5**(i+1)
+        )
+    # ax.legend()
+    return ax
