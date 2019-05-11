@@ -81,7 +81,7 @@ for a in tqdm(range(len(activations))):
     )
 
     print("Training model with {}...".format(activation))
-    net.train(X_train, y_train, epochs=epochs, batch_size=batch_size, 
+    net.train(X_train, y_train, epochs=epochs, batch_size=batch_size,
               verbose=1)
 
     if not os.path.exists(experiment_dir):
