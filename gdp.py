@@ -47,24 +47,25 @@ dropout = 0.1
 normalize = False
 activations = ['linear', 'relu', 'tanh', 'sigmoid', 'exponential']
 
-experiment_dir = "experiments/gdp/0/relu/"
+for activation in activations:
+    experiment_dir = "experiments/gdp/0/{}/".format(activation)
 
-net = bnn(
-    X_train,
-    y_train,
-    ([int(n_hidden)] * num_hidden_layers),
-    normalize=normalize,
-    tau=tau,
-    dropout=dropout,
-    activation='relu'
-)
+    net = bnn(
+        X_train,
+        y_train,
+        ([int(n_hidden)] * num_hidden_layers),
+        normalize=normalize,
+        tau=tau,
+        dropout=dropout,
+        activation=activation
+    )
 
-net.train(X_train, y_train, epochs=epochs, batch_size=batch_size,
-          verbose=1)
+    net.train(X_train, y_train, epochs=epochs, batch_size=batch_size,
+              verbose=1)
 
-if not os.path.exists(experiment_dir):
-    os.makedirs(experiment_dir)
-net.model.save("{}model.h5".format(experiment_dir))
+    if not os.path.exists(experiment_dir):
+        os.makedirs(experiment_dir)
+    net.model.save("{}model.h5".format(experiment_dir))
 
-plot_predictions(net, trainset, X_test, X, dates, sample_inds, out_of_sample_inds, iters=1000, n_std=4)
-plt.savefig("{}plot.png".format(experiment_dir))
+    plot_predictions(net, trainset, X_test, X, dates, sample_inds, out_of_sample_inds, iters=1000, n_std=4)
+    plt.savefig("{}plot_{}.png".format(experiment_dir, activation))
