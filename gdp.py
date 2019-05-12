@@ -39,12 +39,12 @@ trainset = X_train, y_train
 
 num_hidden_layers = 5
 n_hidden = 1024 # num hidden units
-epochs = 500
+epochs = 10000
 batch_size = 128
 epochs_multiplier = 1
 tau = 0.1
 dropout = 0.1
-normalize = False
+normalize = True
 activations = ['linear', 'relu', 'tanh', 'sigmoid', 'exponential']
 
 for activation in activations:
