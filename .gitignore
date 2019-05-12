@@ -6,6 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
+experiments/*
 .idea/
 
 # Distribution / packaging
