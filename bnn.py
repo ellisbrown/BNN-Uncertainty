@@ -19,6 +19,7 @@ class bnn:
     def __init__(self, X_train, y_train, n_hidden,
                  normalize=False, tau=1.0, dropout=0.05,
                  lengthscale=1e-2, optimizer='adam',
+                 weight_prior="glorot_uniform", bias_prior='zeros',
                  activation='relu'):
         """
             Constructor for the class implementing a Bayesian neural network
@@ -69,14 +70,21 @@ class bnn:
         inputs = Input(shape=(X_train.shape[1],))
         inter = Dropout(dropout)(inputs, training=True)
         inter = Dense(n_hidden[0], activation=activation,
+                      kernel_initializer=weight_prior,
+                      bias_initializer=bias_prior,
                       kernel_regularizer=l2(reg))(inter)
         for i in range(len(n_hidden) - 1):
             inter = Dropout(dropout)(inter, training=True)
             inter = Dense(n_hidden[i+1], activation=activation,
+                          kernel_initializer=weight_prior,
+                          bias_initializer=bias_prior,
                           kernel_regularizer=l2(reg))(inter)
         inter = Dropout(dropout)(inter, training=True)
         outputs = Dense(
-            y_train_normalized.shape[1], kernel_regularizer=l2(reg))(inter)
+            y_train_normalized.shape[1],
+            kernel_initializer=weight_prior,
+            bias_initializer=bias_prior,
+            kernel_regularizer=l2(reg))(inter)
         model = Model(inputs, outputs)
 
         self.tau = tau
@@ -92,6 +100,7 @@ class bnn:
 
         # iterate training
         start_time = time.time()
+        # self.model.fit(X_train, y_train,
         self.model.fit(X_train, y_train_normalized,
                        batch_size=batch_size, epochs=epochs, verbose=0)
         self.running_time = time.time() - start_time
