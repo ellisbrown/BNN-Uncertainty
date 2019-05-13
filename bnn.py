@@ -101,7 +101,7 @@ class bnn:
         # self.model.fit(X_train, y_train,
         self.model.fit(X_train, y_train,
                        batch_size=batch_size, epochs=epochs, verbose=verbose)
-        self.running_time = time.time() - start_time
+        self.running_time += time.time() - start_time
 
     def predict(self, X_test, T=10000):
         X_test = np.array(X_test, ndmin=2)
