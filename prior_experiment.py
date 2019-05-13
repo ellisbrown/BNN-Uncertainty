@@ -10,7 +10,7 @@ from data import load_from_H5
 from bnn import bnn
 
 parser = argparse.ArgumentParser(description='Prior experiment runner')
-parser.add_argument('-a', '--activation', default=None, help='Activation for this experiment')
+parser.add_argument('-a', '--activations', nargs='+', default=None, help='Activation for this experiment')
 parser.add_argument('-f', default=None, type=str, help="Dummy arg so we can load in Jupyter Notebooks")
 args = parser.parse_args()
 
@@ -60,7 +60,7 @@ def prior_plot(activation, prior, iters=20):
         X_train.squeeze(),
         qtl_1.squeeze(),
         qtl_3.squeeze(),
-        color="k",
+        color="b",
         alpha=0.25
     )
     plt.plot(X_train, means,
@@ -69,14 +69,14 @@ def prior_plot(activation, prior, iters=20):
              #         linestyle=":",
              linewidth=1,
              alpha=.7)
-    # plt.xlim(-2, 2)
-    plt.axis([-2, 2, -2, 2])
+    plt.xlim(-2, 2)
+    # plt.axis([-2, 2, -2, 2])
 
 
 def prior_comparison_experiment(priors, activation='relu', iters=20):
     experiment_dir = "experiments/priors/"
     for prior in priors:
-        print("Starting the {} prior experiment...".format(prior))
+        print("Starting the {} with {} prior experiment...".format(activation, prior))
         prior_plot(activation=activation, prior=prior, iters=iters)
         figname = "{}{}_{}.png".format(experiment_dir, activation, prior)
         if os.path.isfile(figname):
@@ -89,18 +89,32 @@ def main():
     priors = [
         "RandomNormal",
         "RandomUniform",
-        # "TruncatedNormal",
-        # "VarianceScaling",
-        # "lecun_uniform",
+        "TruncatedNormal",
+        "VarianceScaling",
+        "lecun_uniform",
+        "lecun_normal",
         "glorot_normal",
         "glorot_uniform",
-        # "he_normal",
-        # "lecun_normal",
-        # "he_uniform"
+        "he_normal",
+        "he_uniform"
+        # custom: t-distribution
     ]
-    activation = 'relu' if args.activation is None else args.activation
+    activations = args.activations if args.activations is not None else [
+        'relu',
+        'tanh',
+        'sigmoid',
+        'linear',
+        'softplus',
+        'elu',
+        'softmax',
+        'softsign',
+        'exponential',
+        'hard_sigmoid'
+        # custom: gaussian
+    ]
     iters = 40
-    prior_comparison_experiment(priors=priors, activation=activation, iters=iters)
+    for activation in tqdm.tqdm(activations):
+        prior_comparison_experiment(priors=priors, activation=activation, iters=iters)
 
 
 if __name__ == '__main__':
