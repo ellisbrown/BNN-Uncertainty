@@ -45,26 +45,24 @@ class bnn:
         # We normalize the training data to have zero mean and unit standard
         # deviation in the training set if necessary
 
+        self.mean_y_train = np.mean(y_train)
+        self.std_y_train = np.std(y_train)
+
         if normalize:
             self.std_X_train = np.std(X_train, 0)
             self.std_X_train[self.std_X_train == 0] = 1
             self.mean_X_train = np.mean(X_train, 0)
+            X_train = (X_train - np.full(X_train.shape, self.mean_X_train)) / \
+                np.full(X_train.shape, self.std_X_train)
+
+            y_train_normalized = (y_train - self.mean_y_train) / self.std_y_train
+            y_train_normalized = np.array(y_train_normalized, ndmin=2).T
         else:
             self.std_X_train = np.ones(X_train.shape[1])
             self.mean_X_train = np.zeros(X_train.shape[1])
 
-        X_train = (X_train - np.full(X_train.shape, self.mean_X_train)) / \
-            np.full(X_train.shape, self.std_X_train)
-
-        self.mean_y_train = np.mean(y_train)
-        self.std_y_train = np.std(y_train)
-
-        y_train_normalized = (y_train - self.mean_y_train) / self.std_y_train
-        y_train_normalized = np.array(y_train_normalized, ndmin=2).T
-
         # We construct the network
         N = X_train.shape[0]
-        batch_size = 128
         reg = lengthscale**2 * (1 - dropout) / (2. * N * tau)
 
         inputs = Input(shape=(X_train.shape[1],))
@@ -81,7 +79,7 @@ class bnn:
                           kernel_regularizer=l2(reg))(inter)
         inter = Dropout(dropout)(inter, training=True)
         outputs = Dense(
-            y_train_normalized.shape[1],
+            1,
             kernel_initializer=weight_prior,
             bias_initializer=bias_prior,
             kernel_regularizer=l2(reg))(inter)
@@ -93,29 +91,29 @@ class bnn:
 
     def train(self, X_train, y_train, batch_size, epochs=40, verbose=0):
         # normalize
-        X_train = (X_train - np.full(X_train.shape, self.mean_X_train)) / \
-            np.full(X_train.shape, self.std_X_train)
-        y_train_normalized = (y_train - self.mean_y_train) / self.std_y_train
-        y_train_normalized = np.array(y_train_normalized, ndmin=2).T
+        # X_train = (X_train - np.full(X_train.shape, self.mean_X_train)) / \
+        #     np.full(X_train.shape, self.std_X_train)
+        # y_train_normalized = (y_train - self.mean_y_train) / self.std_y_train
+        # y_train_normalized = np.array(y_train_normalized, ndmin=2).T
 
         # iterate training
         start_time = time.time()
         # self.model.fit(X_train, y_train,
-        self.model.fit(X_train, y_train_normalized,
+        self.model.fit(X_train, y_train,
                        batch_size=batch_size, epochs=epochs, verbose=verbose)
         self.running_time = time.time() - start_time
 
     def predict(self, X_test, T=10000):
         X_test = np.array(X_test, ndmin=2)
 
-        X_test = (X_test - np.full(X_test.shape, self.mean_X_train)) / \
-            np.full(X_test.shape, self.std_X_train)
+        # X_test = (X_test - np.full(X_test.shape, self.mean_X_train)) / \
+        #     np.full(X_test.shape, self.std_X_train)
 
         pbar = tqdm.trange(T)
 
         Yt_hat = np.array(
             [self.model.predict(X_test, batch_size=500, verbose=0) for _ in pbar])
-        Yt_hat = Yt_hat * self.std_y_train + self.mean_y_train
+        # Yt_hat = Yt_hat * self.std_y_train + self.mean_y_train
 
         # We compute the predictive mean and variance for the target variables
         # of the test data
