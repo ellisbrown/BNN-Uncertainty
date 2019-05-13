@@ -3,7 +3,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import argparse
-from keras.models import model_from_json
+from keras.models import load_model
 from tqdm.auto import tqdm
 import os
 import pickle
@@ -34,7 +34,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.logging.set_verbosity(tf.logging.ERROR)
 
 parser = argparse.ArgumentParser(description='Mauna Loa experiment runner')
-parser.add_argument('-e', '--epochs', default=1000, type=int, help="Number of epochs")
+parser.add_argument('-e', '--epochs', default=200, type=int, help="Number of epochs")
 parser.add_argument('-x', '--experiment', default="default", type=str, help="Name of experiment to run")
 parser.add_argument('-a', '--activations', default=None, nargs='+', help='Activations for this experiment')
 parser.add_argument('-o', '--overwrite', action='store_true', help='Overwrite existing experiment?')
@@ -54,7 +54,7 @@ num_hidden_layers = 5
 n_hidden = 1024  # num hidden units
 normalize = False
 epochs = args.epochs
-epoch_step_size = 500
+epoch_step_size = 200
 batch_size = 128
 
 test_iters = 20 # low to speed up training
@@ -65,12 +65,14 @@ lengthscale = 1e-2  # 5
 optimizer = 'adam'
 dropout = 0.1
 
-# weight_prior = 'glorot_uniform'
-# bias_prior = 'zeros'
-weight_prior = bias_prior = 'RandomNormal'
+weight_prior = 'glorot_uniform'
+bias_prior = 'zeros'
+# weight_prior = bias_prior = 'glorot_normal'
+# weight_prior = bias_prior = 'RandomNormal'
 
-# experiment_name = args.experiment
-experiment_name = 'random_normal_prior'
+experiment_name = args.experiment
+# experiment_name = 'glorot_normal_prior'
+# experiment_name = 'random_normal_prior'
 
 activations = args.activations if args.activations else \
     [
@@ -96,28 +98,23 @@ for a in tqdm(range(len(activations))):
     experiment_dir = "{}{}/{}/".format(gold_dir, experiment_name, activation)
 
     name = activation
-    weight_dir = experiment_dir + "weights/"
     plot_dir = experiment_dir + "plots/"
     stats_file = experiment_dir + "stats.csv"
-    architecture_file = experiment_dir + "model_architecture.json"
+    model_file = experiment_dir + "model.h5"
     # create dirs
-    for d in [experiment_dir, weight_dir, plot_dir]:
+    for d in [experiment_dir, plot_dir]:
         if not os.path.exists(d):
             os.makedirs(d)
 
     print("Starting the {} experiment...".format(activation))
 
     # find model and pick up where left off
-    if os.path.exists(weight_dir) and os.path.exists(plot_dir) and \
-            os.path.exists(stats_file) and os.path.exists(architecture_file) and not args.overwrite:
+    if os.path.exists(plot_dir) and os.path.exists(stats_file) and \
+            os.path.exists(model_file) and not args.overwrite:
         stats = pd.read_csv(stats_file, index_col=0)
         # start at max recorded epoch
         cur_epoch = stats.index.max()
         print("Existing {} experiment found! Resuming at epoch {}.".format(name, cur_epoch))
-        with open(architecture_file, 'r') as f:
-            architecture = json.load(f)
-        model = model_from_json(json.dumps(architecture))
-        model.load_weights("{}epoch_{}.h5".format(weight_dir, cur_epoch))
         net = bnn(
             X_train,
             y_train,
@@ -128,13 +125,12 @@ for a in tqdm(range(len(activations))):
             activation=activation,
             weight_prior=weight_prior,
             bias_prior=bias_prior,
-            model=model
+            model=load_model(model_file)
         )
     else:
         print("Overwriting existing {} experiment".format(name) if args.overwrite \
                   else "No existing {}experiment found.".format(name))
         # otherwise start from scratch
-
 
         cur_epoch = 0
         stats = stats_row(cur_epoch)
@@ -151,10 +147,8 @@ for a in tqdm(range(len(activations))):
             bias_prior=bias_prior,
             model=None
         )
-
         # save architecture
-        with open(architecture_file, 'w+') as f:
-            f.write(net.model.to_json())
+        net.model.save(model_file)
 
     stats.index.name = 'epochs'
     if epoch_step_size > epochs:
@@ -166,7 +160,7 @@ for a in tqdm(range(len(activations))):
         print("Training model with {} through epoch {}...".format(name, cur_epoch))
         net.train(X_train, y_train, epochs=epoch_step_size, batch_size=batch_size, verbose=0)
 
-        net.model.save_weights("{}epoch_{}.h5".format(weight_dir, cur_epoch))
+        net.model.save(model_file)
 
         # plot
         fig = plt.figure()
