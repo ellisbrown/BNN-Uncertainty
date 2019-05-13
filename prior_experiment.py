@@ -77,9 +77,13 @@ def prior_comparison_experiment(priors, activation='relu', iters=20):
     experiment_dir = "experiments/priors/"
     for prior in priors:
         print("Starting the {} with {} prior experiment...".format(activation, prior))
-        prior_plot(activation=activation, prior=prior, iters=iters)
         figname = "{}{}_{}.png".format(experiment_dir, activation, prior)
         if os.path.isfile(figname):
+            # skip
+            continue
+        prior_plot(activation=activation, prior=prior, iters=iters)
+        if os.path.isfile(figname):
+            # overwrite
             os.remove(figname)  # Opt.: os.system("rm "+strFile)
         plt.savefig(figname)
         plt.close()
@@ -112,6 +116,8 @@ def main():
         'hard_sigmoid'
         # custom: gaussian
     ]
+    # priors.reverse()
+    # activations.reverse()
     iters = 40
     for activation in tqdm.tqdm(activations):
         prior_comparison_experiment(priors=priors, activation=activation, iters=iters)

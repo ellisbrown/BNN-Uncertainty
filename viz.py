@@ -60,6 +60,26 @@ def plot_predictions(net, trainset, X_test,
     ax.legend()
     return ax
 
+def plot_predictions_gold(X_train, Xs, y_train,
+                          y_means, y_stds, n_std=2):
+    plt.plot(X_train, y_train, "r", alpha=0.8, label="observed")
+    plt.plot(Xs, y_means,
+             label="prediction",
+             color="k",
+             linestyle=":",
+             linewidth=.5,
+             alpha=.8)
+    for i in range(n_std):
+        plt.fill_between(
+            Xs.squeeze(),
+            (y_means - y_stds * ((i+1)/2)).squeeze(),
+            (y_means + y_stds * ((i+1)/2)).squeeze(),
+            color="b",
+            alpha=0.5**(i+1)
+        )
+    plt.legend()
+    return plt
+
 
 def plot_predictions_no_legend(net, trainset, X_test,
                                iters=200, n_std=2, ax=None,

@@ -3,24 +3,37 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import argparse
-from keras.models import load_model
+from keras.models import model_from_json
 from tqdm.auto import tqdm
 import os
 import pickle
 import pandas as pd
+import numpy as np
 
 from data import load_from_H5
 from bnn import bnn
-from viz import plot_predictions
+from viz import plot_predictions_gold
+
+def stats_row(epoch, rmse_standard_pred=np.nan, rmse=np.nan, test_ll=np.nan,
+              all_std=np.nan, train_std=np.nan, runtime=np.nan):
+    return pd.DataFrame.from_dict({
+            epoch: {
+                "rmse_standard_pred": rmse_standard_pred,
+                "rmse": rmse,
+                "log_loss": test_ll,
+                "all_std": all_std,
+                "train_std": train_std,
+                "runtime": runtime\
+            }
+    }, orient='index')
+
 
 parser = argparse.ArgumentParser(description='Mauna Loa experiment runner')
-parser.add_argument('-x', '--exp', default=0, type=int, help='Experiment number')
-parser.add_argument('-e', '--epochs', default=50, type=int, help="Number of epochs")
+parser.add_argument('-e', '--epochs', default=1000, type=int, help="Number of epochs")
 parser.add_argument('-a', '--activations', default=None, nargs='+', help='Activations for this experiment')
+parser.add_argument('-o', '--overwrite', action='store_true', help='Overwrite existing experiment?')
 parser.add_argument('-f', default=None, type=str, help="Dummy arg so we can load in Jupyter Notebooks")
 args = parser.parse_args()
-
-exp_num = args.exp
 
 test_hdf5_filepath = 'data/Mauna Loa/test.h5'
 train_hdf5_filepath = 'data/Mauna Loa/train.h5'
@@ -33,16 +46,22 @@ X_train, y_train = trainset
 
 num_hidden_layers = 5
 n_hidden = 1024  # num hidden units
+normalize = False
 epochs = args.epochs
+epoch_step_size = 100
 batch_size = 128
+
+test_iters = 40 # low to speed up training
+n_std = 2
+
+weight_prior = 'glorot_uniform'
+bias_prior = 'zeros'
+
 tau = 10
 lengthscale = 1e-2  # 5
 optimizer = 'adam'
 dropout = 0.1
-normalize = False
-test_iters = 1000
-weight_prior='glorot_uniform'
-bias_prior='zeros'
+
 
 activations = args.activations if args.activations else \
     [
@@ -57,62 +76,91 @@ activations = args.activations if args.activations else \
     ]
 
 
-experiment_dir = "experiments/mauna_loa/gold/"
-
-# autoincrement exp number
-exp_num = args.exp if args.exp > 0 else \
-    int(max([name for name in os.listdir(experiment_dir)
-             if os.path.isdir(os.path.join(experiment_dir, name)) and name[0] != "."])) + 1
-
-experiment_dir = experiment_dir + "{}/".format(exp_num)
-if not os.path.exists(experiment_dir):
-    os.makedirs(experiment_dir)
-experiment_dir = "{}exp_{}_".format(experiment_dir, exp_num)
+gold_dir = "experiments/mauna_loa/gold/"
 
 # experiments
 stats = {}
 for a in tqdm(range(len(activations))):
     activation = activations[a]
+    experiment_dir = "{}{}/".format(gold_dir, activation)
+
+    name = activation
+    weight_dir = experiment_dir + "weights/"
+    plot_dir = experiment_dir + "plots/"
+    stats_file = experiment_dir + "stats.csv"
+    architecture_file = experiment_dir + "model_architecture.json"
+    # create dirs
+    for d in [experiment_dir, weight_dir, plot_dir]:
+        if not os.path.exists(d):
+            os.makedirs(d)
+
     print("Starting the {} experiment...".format(activation))
-    net = bnn(
-        X_train,
-        y_train,
-        ([int(n_hidden)] * num_hidden_layers),
-        normalize=normalize,
-        tau=tau,
-        dropout=dropout,
-        activation=activation,
-        weight_prior=weight_prior,
-        bias_prior=bias_prior
-    )
 
-    print("Training model with {}...".format(activation))
-    net.train(X_train, y_train, epochs=epochs, batch_size=batch_size,
-              verbose=1)
+    # find model and pick up where left off
+    if os.path.exists(weight_dir) and os.path.exists(plot_dir) and \
+        os.path.exists(stats_file) and os.path.exists(architecture_file) and not args.overwrite:
+        stats = pd.read_csv(stats_file)
+        # start at max recorded epoch
+        cur_epoch = stats.index.max()
+        print("Existing {} experiment found! Resuming at epoch {}.".format(name, cur_epoch))
+        net = model_from_json(architecture_file)
+        net.model.load_weights("{}epoch_{}.h5".format(weight_dir, cur_epoch))
+    else:
+        print("Overwriting existing {} experiment".format(name) if args.overwrite \
+                  else "No existing {}experiment found.".format(name))
+        # otherwise start from scratch
+        net = bnn(
+            X_train,
+            y_train,
+            ([int(n_hidden)] * num_hidden_layers),
+            normalize=normalize,
+            tau=tau,
+            dropout=dropout,
+            activation=activation,
+            weight_prior=weight_prior,
+            bias_prior=bias_prior
+        )
 
-    net.model.save("{}{}_model.h5".format(experiment_dir, activation))
+        # save architecture
+        with open(architecture_file, 'w+') as f:
+            f.write(net.model.to_json())
 
-    # record test stats
-    rmse_standard_pred, rmse, test_ll = net.test(X_test, y_test, T=test_iters)
-    stats[activation] = {
-        "rmse_standard_pred": rmse_standard_pred,
-        "rmse": rmse,
-        "log_loss": test_ll}
+        cur_epoch = 0
+        stats = stats_row(cur_epoch)
+        stats.to_csv(stats_file)
 
-    fig = plt.figure()
-    plt.xlim(-1.75, 3.75)
-    # create prediction plot
-    plot_predictions(net, trainset, X_test, iters=test_iters, n_std=2)
+    if epoch_step_size > epochs:
+        epoch_step_size = epochs
+    end_epoch = cur_epoch + epochs
+    while cur_epoch < end_epoch:
+        cur_epoch += epoch_step_size
 
-    # save plots
-    figname = "{}{}_plot".format(experiment_dir, activation)
-    plt.savefig("{}.png".format(figname))
-    # save reloadable/editable plot
-    with open("{}.fig.pickle".format(figname), "wb") as f:
-        pickle.dump(fig, f)
-    plt.close()
+        print("Training model with {} through epoch {}...".format(name, cur_epoch))
+        net.train(X_train, y_train, epochs=epoch_step_size, batch_size=batch_size, verbose=0)
 
-# save stats
-df = pd.DataFrame.from_dict(stats, orient='index')
-df.to_csv("{}stats.csv".format(experiment_dir))
+        net.model.save_weights("{}epoch_{}.h5".format(weight_dir, cur_epoch))
 
+        # plot
+        fig = plt.figure()
+        plt.xlim(-1.75, 3.75)
+
+        Xs = np.concatenate((X_test, X_train))
+        Xs = np.sort(Xs, axis=0)
+        y_means, y_stds = net.predict(Xs, T=test_iters)
+        plot_predictions_gold(X_train, Xs, y_train, y_stds, n_std)
+
+        # save plots
+        figname = "{}{}_epoch_{}".format(plot_dir, name, cur_epoch)
+        plt.savefig("{}.png".format(figname))
+        # save reloadable/editable plot
+        # with open("{}.fig.pickle".format(figname), "wb") as f:
+        #     pickle.dump(fig, f)
+        plt.close()
+
+        # record test stats
+        all_std = y_stds.mean()
+        train_std = y_stds[:X_test.shape[0]].mean()
+        rmse_standard_pred, rmse, test_ll = net.test(X_test, y_test, T=test_iters)
+        stats = stats.append(stats_row(cur_epoch, rmse_standard_pred, rmse, test_ll,
+                                       all_std, train_std, net.running_time))
+        stats.to_csv(stats_file)

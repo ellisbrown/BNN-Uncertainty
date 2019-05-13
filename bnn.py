@@ -44,6 +44,7 @@ class bnn:
 
         # We normalize the training data to have zero mean and unit standard
         # deviation in the training set if necessary
+        self.running_time = 0
 
         self.mean_y_train = np.mean(y_train)
         self.std_y_train = np.std(y_train)
