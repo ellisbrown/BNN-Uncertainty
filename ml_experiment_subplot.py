@@ -11,7 +11,7 @@ import pandas as pd
 
 from data import load_from_H5
 from bnn import bnn
-from viz import plot_predictions
+from viz import plot_predictions_no_legend
 
 parser = argparse.ArgumentParser(description='Mauna Loa experiment runner')
 parser.add_argument('-x', '--exp', default=0, type=int, help='Experiment number')
@@ -36,13 +36,11 @@ n_hidden = 1024  # num hidden units
 epochs = args.epochs
 batch_size = 128
 tau = 10
-lengthscale = 1e-2  # 5
+lengthscale = 5
 optimizer = 'adam'
 dropout = 0.1
 normalize = False
 test_iters = 1000
-weight_prior='glorot_uniform'
-bias_prior='zeros'
 
 activations = args.activations if args.activations else \
     [
@@ -56,8 +54,23 @@ activations = args.activations if args.activations else \
         'exponential'
     ]
 
+fig, axes = plt.subplots(len(activations), sharex=True, sharey=True)
+fig.set_figwidth(7.48)
+fig.set_figheight(1.75 * len(activations))
+fig.tight_layout()
+fig.subplots_adjust(hspace=0)
+plt.xlim(-1.75, 3.75)
 
-experiment_dir = "experiments/mauna_loa/gold/"
+# legend
+custom_lines = [Line2D([0], [0], color="r", lw=4),
+                Line2D([0], [0], color="k", lw=1),
+                Line2D([0], [0], color="b", lw=4)]
+fig.legend(custom_lines, ["observed", "mean", "uncertainty"], ncol=3,
+           bbox_to_anchor=(0.075, .01, .89, .01), loc="lower left",
+           mode="expand", borderaxespad=.02, fancybox=True, shadow=True
+           )
+
+experiment_dir = "experiments/mauna_loa/"
 
 # autoincrement exp number
 exp_num = args.exp if args.exp > 0 else \
@@ -81,9 +94,7 @@ for a in tqdm(range(len(activations))):
         normalize=normalize,
         tau=tau,
         dropout=dropout,
-        activation=activation,
-        weight_prior=weight_prior,
-        bias_prior=bias_prior
+        activation=activation
     )
 
     print("Training model with {}...".format(activation))
@@ -99,20 +110,26 @@ for a in tqdm(range(len(activations))):
         "rmse": rmse,
         "log_loss": test_ll}
 
-    fig = plt.figure()
-    plt.xlim(-1.75, 3.75)
     # create prediction plot
-    plot_predictions(net, trainset, X_test, iters=test_iters, n_std=2)
-
-    # save plots
-    figname = "{}{}_plot".format(experiment_dir, activation)
-    plt.savefig("{}.png".format(figname))
-    # save reloadable/editable plot
-    with open("{}.fig.pickle".format(figname), "wb") as f:
-        pickle.dump(fig, f)
-    plt.close()
+    ax = axes[a]
+    plot_predictions_no_legend(net, trainset, X_test, iters=test_iters,
+                               n_std=2, ax=ax)
+    ax.set(ylabel=activation)
+    ax.label_outer()
 
 # save stats
 df = pd.DataFrame.from_dict(stats, orient='index')
 df.to_csv("{}stats.csv".format(experiment_dir))
 
+# adjust bottom
+box = ax.get_position()
+ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                 box.width, box.height * 0.9])
+# plt.subplots_adjust(bottom=0.1)
+
+# save plots
+figname = "{}plot".format(experiment_dir)
+plt.savefig("{}.png".format(figname))
+# save reloadable/editable plot
+with open("{}.fig.pickle".format(figname), "wb") as f:
+    pickle.dump(fig, f)
