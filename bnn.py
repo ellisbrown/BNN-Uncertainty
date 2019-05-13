@@ -20,7 +20,7 @@ class bnn:
                  normalize=False, tau=1.0, dropout=0.05,
                  lengthscale=1e-2, optimizer='adam',
                  weight_prior="glorot_uniform", bias_prior='zeros',
-                 activation='relu'):
+                 activation='relu', model=None):
         """
             Constructor for the class implementing a Bayesian neural network
             trained with the probabilistic back propagation method.
@@ -62,33 +62,45 @@ class bnn:
             self.std_X_train = np.ones(X_train.shape[1])
             self.mean_X_train = np.zeros(X_train.shape[1])
 
-        # We construct the network
-        N = X_train.shape[0]
-        reg = lengthscale**2 * (1 - dropout) / (2. * N * tau)
-
-        inputs = Input(shape=(X_train.shape[1],))
-        inter = Dropout(dropout)(inputs, training=True)
-        inter = Dense(n_hidden[0], activation=activation,
-                      kernel_initializer=weight_prior,
-                      bias_initializer=bias_prior,
-                      kernel_regularizer=l2(reg))(inter)
-        for i in range(len(n_hidden) - 1):
-            inter = Dropout(dropout)(inter, training=True)
-            inter = Dense(n_hidden[i+1], activation=activation,
-                          kernel_initializer=weight_prior,
-                          bias_initializer=bias_prior,
-                          kernel_regularizer=l2(reg))(inter)
-        inter = Dropout(dropout)(inter, training=True)
-        outputs = Dense(
-            1,
-            kernel_initializer=weight_prior,
-            bias_initializer=bias_prior,
-            kernel_regularizer=l2(reg))(inter)
-        model = Model(inputs, outputs)
+        self.n_hidden = n_hidden
+        self.activation = activation
+        self.weight_prior = weight_prior
+        self.bias_prior = bias_prior
 
         self.tau = tau
+        self.lengthscale = lengthscale
+        self.dropout = dropout
+
+
+        model = model if model else self.__gen_model(X_train)
         model.compile(loss='mean_squared_error', optimizer=optimizer)
         self.model = model
+
+
+    def __gen_model(self, X_train):
+        N = X_train.shape[0]
+        reg = self.lengthscale**2 * (1 - self.dropout) / (2. * N * self.tau)
+
+        inputs = Input(shape=(X_train.shape[1],))
+        inter = Dropout(self.dropout)(inputs, training=True)
+        inter = Dense(self.n_hidden[0], activation=self.activation,
+                      kernel_initializer=self.weight_prior,
+                      bias_initializer=self.bias_prior,
+                      kernel_regularizer=l2(reg))(inter)
+        for i in range(len(self.n_hidden) - 1):
+            inter = Dropout(self.dropout)(inter, training=True)
+            inter = Dense(self.n_hidden[i+1], activation=self.activation,
+                          kernel_initializer=self.weight_prior,
+                          bias_initializer=self.bias_prior,
+                          kernel_regularizer=l2(reg))(inter)
+        inter = Dropout(self.dropout)(inter, training=True)
+        outputs = Dense(
+            1,
+            kernel_initializer=self.weight_prior,
+            bias_initializer=self.bias_prior,
+            kernel_regularizer=l2(reg))(inter)
+        return Model(inputs, outputs)
+
 
     def train(self, X_train, y_train, batch_size, epochs=40, verbose=0):
         # normalize
@@ -153,7 +165,7 @@ class bnn:
         rmse_standard_pred = np.mean(
             (y_test.squeeze() - standard_pred.squeeze())**2.)**0.5
 
-        pbar = tqdm.tnrange(T)
+        pbar = tqdm.trange(T)
 
         Yt_hat = np.array(
             [model.predict(X_test, batch_size=500, verbose=0) for _ in pbar])

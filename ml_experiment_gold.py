@@ -9,6 +9,7 @@ import os
 import pickle
 import pandas as pd
 import numpy as np
+import json
 
 from data import load_from_H5
 from bnn import bnn
@@ -72,9 +73,9 @@ activations = args.activations if args.activations else \
         'softplus',
         'elu',
         'softmax',
-        'exponential'
+        # 'exponential'
     ]
-
+activations.reverse()
 
 gold_dir = "experiments/mauna_loa/gold/"
 
@@ -98,17 +99,15 @@ for a in tqdm(range(len(activations))):
 
     # find model and pick up where left off
     if os.path.exists(weight_dir) and os.path.exists(plot_dir) and \
-        os.path.exists(stats_file) and os.path.exists(architecture_file) and not args.overwrite:
-        stats = pd.read_csv(stats_file)
+            os.path.exists(stats_file) and os.path.exists(architecture_file) and not args.overwrite:
+        stats = pd.read_csv(stats_file, index_col=0)
         # start at max recorded epoch
         cur_epoch = stats.index.max()
         print("Existing {} experiment found! Resuming at epoch {}.".format(name, cur_epoch))
-        net = model_from_json(architecture_file)
-        net.model.load_weights("{}epoch_{}.h5".format(weight_dir, cur_epoch))
-    else:
-        print("Overwriting existing {} experiment".format(name) if args.overwrite \
-                  else "No existing {}experiment found.".format(name))
-        # otherwise start from scratch
+        with open(architecture_file, 'r') as f:
+            architecture = json.load(f)
+        model = model_from_json(json.dumps(architecture))
+        model.load_weights("{}epoch_{}.h5".format(weight_dir, cur_epoch))
         net = bnn(
             X_train,
             y_train,
@@ -118,17 +117,36 @@ for a in tqdm(range(len(activations))):
             dropout=dropout,
             activation=activation,
             weight_prior=weight_prior,
-            bias_prior=bias_prior
+            bias_prior=bias_prior,
+            model=model
+        )
+    else:
+        print("Overwriting existing {} experiment".format(name) if args.overwrite \
+                  else "No existing {}experiment found.".format(name))
+        # otherwise start from scratch
+
+
+        cur_epoch = 0
+        stats = stats_row(cur_epoch)
+        stats.to_csv(stats_file) # initialize
+        net = bnn(
+            X_train,
+            y_train,
+            ([int(n_hidden)] * num_hidden_layers),
+            normalize=normalize,
+            tau=tau,
+            dropout=dropout,
+            activation=activation,
+            weight_prior=weight_prior,
+            bias_prior=bias_prior,
+            model=None
         )
 
         # save architecture
         with open(architecture_file, 'w+') as f:
             f.write(net.model.to_json())
 
-        cur_epoch = 0
-        stats = stats_row(cur_epoch)
-        stats.to_csv(stats_file)
-
+    stats.index.name = 'epochs'
     if epoch_step_size > epochs:
         epoch_step_size = epochs
     end_epoch = cur_epoch + epochs
