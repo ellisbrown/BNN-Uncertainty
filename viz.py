@@ -26,7 +26,7 @@ def plot_predictions_only(net, trainset, X_test,
     return ax
 
 
-def plot_predictions(net, trainset, X_test, Xs, dates, sample_inds, out_of_sample_inds,
+def plot_predictions(net, trainset, X_test, y_test, Xs, dates, sample_inds, out_of_sample_inds,
                      iters=200, n_std=2, ax=None,
                      zoomed=False):
     x_train, y_train = trainset
@@ -38,6 +38,7 @@ def plot_predictions(net, trainset, X_test, Xs, dates, sample_inds, out_of_sampl
             plt.axis([-1.75, 3.75, -20, 20])
     y_means, y_stds = net.predict(Xs, T=iters)
     plt.plot(dates[sample_inds], y_train, "r", alpha=0.8, label="observed")
+    plt.plot(dates[out_of_sample_inds], y_test, "r", alpha=0.8, label="observed")
     plt.plot(dates, y_means,
              label="prediction",
              color="k",

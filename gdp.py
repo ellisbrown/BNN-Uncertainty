@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import argparse
 import pandas as pd
 import numpy as np
+from data import load_from_H5
+import pickle
 from keras.models import load_model
 
 from data import load_from_H5
@@ -25,9 +27,10 @@ df = pd.read_csv('data/GDP/gdp_data.csv')
 X = df[df.columns.difference(['GDPC1', 'yq'])].values
 y = df['GDPC1'].values
 dates = df['yq'].values
+cutoff_date = 2006
 
-sample_inds = np.squeeze(np.argwhere(dates<2008))
-out_of_sample_inds = np.squeeze(np.argwhere(dates>=2008))
+sample_inds = np.squeeze(np.argwhere(dates<cutoff_date))
+out_of_sample_inds = np.squeeze(np.argwhere(dates>=cutoff_date))
 
 X_train = X[sample_inds, :]
 X_test = X[out_of_sample_inds, :]
@@ -45,7 +48,7 @@ epochs_multiplier = 1
 tau = 0.1
 dropout = 0.1
 normalize = True
-activations = ['linear', 'relu', 'tanh', 'sigmoid', 'exponential']
+activations = ['relu'] #['linear', 'relu', 'tanh', 'sigmoid', 'exponential']
 
 for activation in activations:
     experiment_dir = "experiments/gdp/0/{}/".format(activation)
@@ -65,7 +68,13 @@ for activation in activations:
 
     if not os.path.exists(experiment_dir):
         os.makedirs(experiment_dir)
-    net.model.save("{}model.h5".format(experiment_dir))
+    net.model.save("{}model_{}_.h5".format(experiment_dir, cutoff_date))
 
-    plot_predictions(net, trainset, X_test, X, dates, sample_inds, out_of_sample_inds, iters=1000, n_std=4)
-    plt.savefig("{}plot_{}.png".format(experiment_dir, activation))
+    plot_predictions(net, trainset, X_test, y_test, X, dates, sample_inds, out_of_sample_inds, iters=1000, n_std=4)
+    plt.axvline(x=cutoff_date)
+    plt.axvline(x=2008)
+    #plt.plot(y_test)
+
+    #load_from_H5("experiments/gdp/0/relu/model_2006_.h5")
+
+    plt.savefig("{}plot_{}_{}.png".format(experiment_dir, cutoff_date, activation))
