@@ -60,6 +60,7 @@ def plot_predictions(net, trainset, X_test,
     ax.legend()
     return ax
 
+
 def plot_predictions_gold(X_train, Xs, y_train,
                           y_means, y_stds, n_std=2):
     plt.plot(X_train, y_train, "r", alpha=0.8, label="observed")

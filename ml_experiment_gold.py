@@ -29,8 +29,13 @@ def stats_row(epoch, rmse_standard_pred=np.nan, rmse=np.nan, test_ll=np.nan,
     }, orient='index')
 
 
+# set tf debug off
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.logging.set_verbosity(tf.logging.ERROR)
+
 parser = argparse.ArgumentParser(description='Mauna Loa experiment runner')
 parser.add_argument('-e', '--epochs', default=1000, type=int, help="Number of epochs")
+parser.add_argument('-x', '--experiment', default="default", type=str, help="Name of experiment to run")
 parser.add_argument('-a', '--activations', default=None, nargs='+', help='Activations for this experiment')
 parser.add_argument('-o', '--overwrite', action='store_true', help='Overwrite existing experiment?')
 parser.add_argument('-f', default=None, type=str, help="Dummy arg so we can load in Jupyter Notebooks")
@@ -49,20 +54,23 @@ num_hidden_layers = 5
 n_hidden = 1024  # num hidden units
 normalize = False
 epochs = args.epochs
-epoch_step_size = 100
+epoch_step_size = 500
 batch_size = 128
 
-test_iters = 40 # low to speed up training
+test_iters = 20 # low to speed up training
 n_std = 2
 
-weight_prior = 'glorot_uniform'
-bias_prior = 'zeros'
-
-tau = 10
+tau = .10  # 10
 lengthscale = 1e-2  # 5
 optimizer = 'adam'
 dropout = 0.1
 
+# weight_prior = 'glorot_uniform'
+# bias_prior = 'zeros'
+weight_prior = bias_prior = 'RandomNormal'
+
+# experiment_name = args.experiment
+experiment_name = 'random_normal_prior'
 
 activations = args.activations if args.activations else \
     [
@@ -73,9 +81,11 @@ activations = args.activations if args.activations else \
         'softplus',
         'elu',
         'softmax',
-        # 'exponential'
+        'softsign',
+        # 'exponential',
+        'hard_sigmoid'
     ]
-activations.reverse()
+# activations.reverse()
 
 gold_dir = "experiments/mauna_loa/gold/"
 
@@ -83,7 +93,7 @@ gold_dir = "experiments/mauna_loa/gold/"
 stats = {}
 for a in tqdm(range(len(activations))):
     activation = activations[a]
-    experiment_dir = "{}{}/".format(gold_dir, activation)
+    experiment_dir = "{}{}/{}/".format(gold_dir, experiment_name, activation)
 
     name = activation
     weight_dir = experiment_dir + "weights/"
@@ -165,7 +175,7 @@ for a in tqdm(range(len(activations))):
         Xs = np.concatenate((X_test, X_train))
         Xs = np.sort(Xs, axis=0)
         y_means, y_stds = net.predict(Xs, T=test_iters)
-        plot_predictions_gold(X_train, Xs, y_train, y_stds, n_std)
+        plot_predictions_gold(X_train, Xs, y_train, y_means, y_stds, n_std)
 
         # save plots
         figname = "{}{}_epoch_{}".format(plot_dir, name, cur_epoch)
