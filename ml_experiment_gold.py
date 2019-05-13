@@ -97,7 +97,7 @@ for a in tqdm(range(len(activations))):
     activation = activations[a]
     experiment_dir = "{}{}/{}/".format(gold_dir, experiment_name, activation)
 
-    name = activation
+    name = "{}_{}".format(experiment_name, activation)
     plot_dir = experiment_dir + "plots/"
     stats_file = experiment_dir + "stats.csv"
     model_file = experiment_dir + "model.h5"
