@@ -67,12 +67,13 @@ dropout = 0.1
 
 weight_prior = 'glorot_uniform'
 bias_prior = 'zeros'
-# weight_prior = bias_prior = 'glorot_normal'
-# weight_prior = bias_prior = 'RandomNormal'
 
 experiment_name = args.experiment
-# experiment_name = 'glorot_normal_prior'
-# experiment_name = 'random_normal_prior'
+if experiment_name == 'glorot_normal_prior':
+    weight_prior = bias_prior = 'glorot_normal'
+elif experiment_name == 'random_normal_prior':
+    weight_prior = bias_prior = 'RandomNormal'
+
 
 activations = args.activations if args.activations else \
     [
