@@ -30,13 +30,13 @@ trainset = load_from_H5(train_hdf5_filepath)
 X_test, y_test = testset
 X_train, y_train = trainset
 
-num_hidden_layers = 4
+num_hidden_layers = 5
 n_hidden = 1024  # num hidden units
 epochs = 50
 batch_size = 128
 tau = 10
 lengthscale=5
-optimizer='adam'
+optimizer = 'adam'
 dropout = 0.1
 normalize = False
 test_iters = 1000
