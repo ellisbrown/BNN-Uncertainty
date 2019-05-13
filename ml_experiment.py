@@ -14,7 +14,8 @@ from bnn import bnn
 from viz import plot_predictions_no_legend
 
 parser = argparse.ArgumentParser(description='Mauna Loa experiment runner')
-parser.add_argument('-e', '--exp', default=0, type=int, help='Experiment number')
+parser.add_argument('-x', '--exp', default=0, type=int, help='Experiment number')
+parser.add_argument('-e', '--epochs', default=50, type=int, help="Number of epochs")
 parser.add_argument('-a', '--activations', default=None, nargs='+', help='Activations for this experiment')
 parser.add_argument('-f', default=None, type=str, help="Dummy arg so we can load in Jupyter Notebooks")
 args = parser.parse_args()
@@ -32,10 +33,10 @@ X_train, y_train = trainset
 
 num_hidden_layers = 5
 n_hidden = 1024  # num hidden units
-epochs = 50
+epochs = args.epochs
 batch_size = 128
 tau = 10
-lengthscale=5
+lengthscale = 5
 optimizer = 'adam'
 dropout = 0.1
 normalize = False

@@ -102,7 +102,7 @@ class bnn:
         start_time = time.time()
         # self.model.fit(X_train, y_train,
         self.model.fit(X_train, y_train_normalized,
-                       batch_size=batch_size, epochs=epochs, verbose=0)
+                       batch_size=batch_size, epochs=epochs, verbose=verbose)
         self.running_time = time.time() - start_time
 
     def predict(self, X_test, T=10000):
