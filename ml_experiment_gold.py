@@ -57,7 +57,7 @@ epochs = args.epochs
 epoch_step_size = 200
 batch_size = 128
 
-test_iters = 20 # low to speed up training
+test_iters = 20  # low to speed up training
 n_std = 2
 
 tau = .10  # 10
