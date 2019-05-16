@@ -140,8 +140,6 @@ class bnn:
             @param X_test   The matrix of features for the test data
             @param T        The number of samples used for mean and var
                             prediction
-
-
             @return m       The predictive mean for the test target variables.
             @return v       The predictive variance for the test target
                             variables.
