@@ -9,10 +9,14 @@ import pickle
 import pandas as pd
 import numpy as np
 import json
+import keras.backend as K
 
 from data import load_from_H5
 from bnn import bnn
 from viz import plot_predictions_gold
+
+def gaussian(x):
+    return K.exp(-K.pow(x,2))
 
 def stats_row(epoch, rmse_standard_pred=np.nan, rmse=np.nan, test_ll=np.nan,
               all_std=np.nan, train_std=np.nan, runtime=np.nan):
@@ -44,7 +48,7 @@ trainset = load_from_H5(train_hdf5_filepath)
 X_test, y_test = testset
 X_train, y_train = trainset
 
-num_hidden_layers = 5
+num_hidden_layers = 1
 #n_hidden = 1024  # num hidden units
 normalize = False
 epochs = args.epochs
@@ -64,17 +68,17 @@ dropout = 0.1
 
 
 activations = args.activations if args.activations else \
-    [
-        'relu',
+    [   gaussian
+        #'relu',
         #'tanh',
         #'sigmoid',
-        #'linear',
-        #'softplus',
-        #'elu',
-        #'softmax',
+        # 'linear',
+        # 'softplus',
+        # 'elu',
+        # 'softmax',
         # 'exponential'
     ]
-nums = [100, 256, 512, 1024, 2048, 4096]
+nums = [10000]#[100, 256, 512, 1024] #[100, 256, 512] # 1024, 2048, 4096]
 #activations.reverse()
 
 num_nodes_dir = "experiments/mauna_loa/num_nodes/"
@@ -84,9 +88,12 @@ stats = {}
 for a in tqdm(range(len(activations))):
     for num in nums:
         activation = activations[a]
-        experiment_dir = "{}{}{}/".format(num_nodes_dir, activation, num)
+        experiment_dir = "{}{}{}{}/".format(num_nodes_dir, activation, num_hidden_layers, num)
 
-        name = activation
+        if activation == gaussian:
+            name =  "gaussian"
+        else:
+            name = activation
         plot_dir = experiment_dir + "plots/"
         stats_file = experiment_dir + "stats.csv"
         model_file = experiment_dir + "model.h5"
