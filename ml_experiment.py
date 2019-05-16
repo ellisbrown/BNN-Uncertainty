@@ -57,7 +57,7 @@ activations = args.activations if args.activations else \
     ]
 
 
-experiment_dir = "experiments/mauna_loa/gold/"
+experiment_dir = "experiments/mauna_loa/"
 
 # autoincrement exp number
 exp_num = args.exp if args.exp > 0 else \
