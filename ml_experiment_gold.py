@@ -73,6 +73,8 @@ if experiment_name == 'glorot_normal_prior':
     weight_prior = bias_prior = 'glorot_normal'
 elif experiment_name == 'random_normal_prior':
     weight_prior = bias_prior = 'RandomNormal'
+elif experiment_name == 'he_normal_prior':
+    weight_prior = bias_prior = 'he_normal'
 
 
 activations = args.activations if args.activations else \
