@@ -10,11 +10,16 @@ import pandas as pd
 import numpy as np
 import json
 import csv
+import keras.backend as K
+
 
 
 from data import load_from_H5
 from bnn import bnn
 from viz import plot_predictions_gold
+
+def gaussian(x):
+    return K.exp(-K.pow(x,2))
 
 test_hdf5_filepath = 'data/Mauna Loa/test.h5'
 train_hdf5_filepath = 'data/Mauna Loa/train.h5'
@@ -41,9 +46,10 @@ lengthscale = 1e-2  # 5
 optimizer = 'adam'
 dropout = 0.1
 
-
+activation = 'gaussian'
 activations = [
-        'relu',
+        gaussian
+        #'relu',
         #'tanh',
         #'sigmoid',
         #'linear',
@@ -52,11 +58,13 @@ activations = [
         #'softmax',
         # 'exponential'
     ]
-nums = [100, 256, 512, 1024]#, 256, 512, 1024] #, 1024, 2048, 4096]
+nums = [100, 256] #, 512, 1024, 10000] #[100, 256, 512, 1024]#, 256, 512, 1024] #, 1024, 2048, 4096]
 #activations.reverse()
 
+
+
 plot_std = True
-plot_name = "num_nodes_with_std"
+plot_name = "{}{}num_nodes_with_std".format(num_hidden_layers, activation)
 
 num_nodes_dir = "experiments/mauna_loa/num_nodes/"
 cur_epoch = 10000
@@ -66,12 +74,10 @@ shading_colors = ['b', 'g', 'r', 'c', 'm', 'y']
 Xs = np.concatenate((X_test, X_train))
 Xs = np.sort(Xs, axis=0)
 
-y_means_gp = np.genfromtxt('/Users/Ethan/Google Drive/School/Fed/EECS 6699/Project/BNN-Uncertainty/y_means_gp.csv', delimiter=',')
-y_stds_gp = np.genfromtxt('/Users/Ethan/Google Drive/School/Fed/EECS 6699/Project/BNN-Uncertainty/y_stds_gp.csv', delimiter=',')
-print(y_means_gp)
-print(Xs)
+y_means_gp = np.genfromtxt('y_means_gp.csv', delimiter=',')
+y_stds_gp = np.genfromtxt('y_stds_gp.csv', delimiter=',')
 plt.plot(Xs, y_means_gp, c = 'k', label = "Gaussian Process")
-plt.xlim(-2, 2)
+plt.ylim(-5, 5)
 
 if plot_std:
     for i in range(n_std):
@@ -84,8 +90,11 @@ if plot_std:
             )
 
 for (shading_col_ind, num) in enumerate(nums):
-    for activation in activations:
-        experiment_dir = "{}{}{}/".format(num_nodes_dir, activation, num)
+    for act in activations:
+        if act == gaussian:
+            experiment_dir = "{}{}{}{}/".format(num_nodes_dir, "gaussian", num_hidden_layers, num)
+        else:
+            experiment_dir = "{}{}{}{}/".format(num_nodes_dir, act, num, num_hidden_layers)
         plot_dir = experiment_dir + "plots/"
         stats_file = experiment_dir + "stats.csv"
         model_file = experiment_dir + "model.h5"
@@ -97,10 +106,10 @@ for (shading_col_ind, num) in enumerate(nums):
             normalize=normalize,
             tau=tau,
             dropout=dropout,
-            activation=activation,
+            activation=act,
             weight_prior=weight_prior,
             bias_prior=bias_prior,
-            model=load_model(model_file)
+            model=load_model(model_file, custom_objects={'gaussian': gaussian})
         )
     plt.xlim(-1.75, 3.75)
 
